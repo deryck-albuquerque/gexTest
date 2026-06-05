@@ -1,0 +1,15 @@
+fastapi==0.115.8
+uvicorn==0.34.0
+pydantic==2.11.0
+pydantic-settings==2.8.0
+aiomysql==0.3.2
+aio-pika==9.5.0
+cryptography==44.0.0
+httpx==0.28.0
+python-json-logger==3.2.0
+aiohttp~=3.14.0
+PyMySQL~=1.2.0
+email-validator==2.3.0
+requests==2.32.4
+locust==2.37.14
+prometheus-client==0.22.1
