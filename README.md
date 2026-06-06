@@ -315,8 +315,12 @@ Teste de carga.
 Execução:
 
 ```bash
-locust -f tests/locustfile.py
+locust -f tests/locustfile.py --users 20 --spawn-rate 5
 ```
+Parâmetros utilizados:
+
+- Users: 20
+- Spawn Rate: 5 usuários/segundo
 
 Interface:
 
