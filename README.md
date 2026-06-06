@@ -763,6 +763,15 @@ Essas métricas permitem avaliar:
 
 ---
 
+## Evidências de Auditoria SQL
+
+Os outputs das queries de auditoria e seus respectivos planos de execução (`EXPLAIN`) estão disponíveis em:
+
+```text
+evidence_database/audit_queries/
+
+---
+
 # Distribuidor SMS
 
 Fluxo:
