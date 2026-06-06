@@ -29,6 +29,17 @@ from app.logging_config import logger
 from app.metrics import sms_delivered_total
 
 
+def get_log_context(data: dict) -> dict:
+    payload = data.get("payload", {})
+
+    return {
+        "correlation_id": data.get("correlation_id"),
+        "gateway": data.get("gateway"),
+        "event": data.get("event") or payload.get("event"),
+        "order_id": data.get("order_id"),
+    }
+
+
 async def send_sms(payload: dict):
     async with aiohttp.ClientSession() as session:
         async with session.post(SMS_WEBHOOK_URL, json=payload) as response:
@@ -56,7 +67,9 @@ async def mark_sms_delivered(order_id: int):
             if row:
                 created_at = row[0].replace(tzinfo=timezone.utc)
 
-                lag_seconds = int((datetime.now(timezone.utc) - created_at).total_seconds())
+                lag_seconds = int(
+                    (datetime.now(timezone.utc) - created_at).total_seconds()
+                )
 
             await cur.execute(
                 """
@@ -77,6 +90,7 @@ async def mark_sms_delivered(order_id: int):
         await conn.commit()
 
     return lag_seconds
+
 
 async def mark_sms_failed(order_id: int):
     async with get_connection() as conn:
@@ -99,7 +113,8 @@ async def mark_sms_failed(order_id: int):
 async def process_sms_payload(data: dict):
     payload = data["payload"]
     order_id = data["order_id"]
-    correlation_id = data["correlation_id"]
+
+    log_context = get_log_context(data)
 
     if random.random() < SMS_FAILURE_RATE:
         raise Exception("random_sms_failure")
@@ -111,8 +126,7 @@ async def process_sms_payload(data: dict):
     logger.info(
         "sms_delivered",
         extra={
-            "correlation_id": correlation_id,
-            "order_id": order_id,
+            **log_context,
             "lag_seconds": lag_seconds,
         },
     )
@@ -122,6 +136,7 @@ async def process_sms_payload(data: dict):
 
 async def process_with_retry(data: dict):
     delays = [1, 4, 16]
+    log_context = get_log_context(data)
 
     for attempt, delay in enumerate(delays, start=1):
         try:
@@ -131,10 +146,9 @@ async def process_with_retry(data: dict):
         except Exception as e:
             logger.error("sms_retry",
                 extra={
-                    "correlation_id": data.get("correlation_id"),
-                    "order_id": data.get("order_id"),
+                    **log_context,
                     "attempt": attempt,
-                    "error": str(e),
+                    "error": str(e)
                 },
             )
 
@@ -152,19 +166,16 @@ async def process_with_retry(data: dict):
 
             await publish(DLQ_DIST_SMS_DEAD,
                 {
-                    "correlation_id": data.get("correlation_id"),
-                    "order_id": data.get("order_id"),
+                    **log_context,
                     "error": str(e),
-                    "payload": data,
+                    "payload": data
                 },
             )
 
-            logger.error(
-                "sms_sent_to_dlq",
+            logger.error("sms_sent_to_dlq",
                 extra={
-                    "correlation_id": data.get("correlation_id"),
-                    "order_id": data.get("order_id"),
-                    "error": str(e),
+                    **log_context,
+                    "error": str(e)
                 },
             )
 
@@ -180,13 +191,18 @@ async def process_sms_message(message: aio_pika.IncomingMessage):
 async def start_sms_worker():
     channel = await get_channel()
 
-    queue = await channel.declare_queue(
-        "dist.sms",
-        durable=True,
-    )
+    queue = await channel.declare_queue("dist.sms", durable=True)
 
     await queue.consume(process_sms_message)
 
-    logger.info("sms_worker_started")
+    logger.info("sms_worker_started",
+        extra={
+            "correlation_id": None,
+            "gateway": None,
+            "event": None,
+            "sms_failure_rate": SMS_FAILURE_RATE,
+            "sms_webhook_url": SMS_WEBHOOK_URL
+        },
+    )
 
     await asyncio.Future()

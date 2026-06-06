@@ -56,7 +56,7 @@ async def process_message(message: dict):
         result = await save_lead_pipeline(
             payload=payload,
             gateway=gateway,
-            correlation_id=correlation_id,
+            correlation_id=correlation_id
         )
 
         order_id = result["order_id"]
@@ -74,7 +74,8 @@ async def process_message(message: dict):
                 "order_id": order_id,
                 "correlation_id": correlation_id,
                 "gateway": gateway,
-                "payload": payload,
+                "event": payload["event"],
+                "payload": payload
             },
         )
 
@@ -83,7 +84,7 @@ async def process_message(message: dict):
             {
                 "order_id": order_id,
                 "correlation_id": correlation_id,
-                "gateway": gateway,
+                "gateway": gateway
             },
         )
 
@@ -92,7 +93,7 @@ async def process_message(message: dict):
             {
                 "order_id": order_id,
                 "correlation_id": correlation_id,
-                "gateway": gateway,
+                "gateway": gateway
             },
         )
 
@@ -101,20 +102,19 @@ async def process_message(message: dict):
             {
                 "order_id": order_id,
                 "correlation_id": correlation_id,
-                "gateway": gateway,
+                "gateway": gateway
             },
         )
 
 
         # Log de sucesso
-        logger.info(
-            "consumer_processed",
+        logger.info("consumer_processed",
             extra={
                 "correlation_id": correlation_id,
                 "gateway": gateway,
                 "event": payload["event"],
                 "order_id": order_id,
-                "lag_seconds": lag_seconds,
+                "lag_seconds": lag_seconds
             },
         )
 
@@ -150,14 +150,13 @@ async def process_with_retry(message: dict):
 
         except Exception as e:
 
-            logger.error(
-                "consumer_retry",
+            logger.error("consumer_retry",
                 extra={
+                    "correlation_id": message.get("correlation_id"),
+                    "gateway": message.get("gateway"),
+                    "event": message.get("payload", {}).get("event"),
                     "attempt": attempt,
-                    "error": str(e),
-                    "correlation_id": message.get(
-                        "correlation_id"
-                    ),
+                    "error": str(e)
                 },
             )
 
@@ -175,22 +174,21 @@ async def process_with_retry(message: dict):
             await save_dead_letter(
                 source=DLQ_CONSUMER_FAILED,
                 payload=message,
-                error=str(e),
+                error=str(e)
             )
 
-            await publish(
-                DLQ_CONSUMER_FAILED,
+            await publish(DLQ_CONSUMER_FAILED,
                 {
                     "error": str(e),
-                    "payload": message,
+                    "payload": message
                 },
             )
 
             logger.error("consumer_sent_to_dlq",
                 extra={
-                    "correlation_id": message.get(
-                        "correlation_id"
-                    ),
-                    "error": str(e),
+                    "correlation_id": message.get("correlation_id"),
+                    "gateway": message.get("gateway"),
+                    "event": message.get("payload", {}).get("event"),
+                    "error": str(e)
                 },
             )
