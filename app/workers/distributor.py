@@ -197,9 +197,7 @@ async def start_sms_worker():
 
     logger.info("sms_worker_started",
         extra={
-            "correlation_id": None,
-            "gateway": None,
-            "event": None,
+            "queue": "dist.sms",
             "sms_failure_rate": SMS_FAILURE_RATE,
             "sms_webhook_url": SMS_WEBHOOK_URL
         },
