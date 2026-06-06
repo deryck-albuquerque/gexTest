@@ -15,7 +15,7 @@ JOIN distribution_status ds
     ON ds.order_id = o.id
 WHERE
     le.event = 'order.approved'
-    ds.channel = 'SMS'
+    AND ds.channel = 'SMS'
     AND ds.status = 'delivered'
     AND ds.delivered_at >= UTC_TIMESTAMP() - INTERVAL 24 HOUR
 GROUP BY
