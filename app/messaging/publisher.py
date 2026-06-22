@@ -1,6 +1,6 @@
 import json
 import aio_pika
-from app.rabbit.connection import get_channel
+from app.messaging.connection import get_channel
 
 
 async def publish(queue_name: str, message: dict):

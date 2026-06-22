@@ -13,7 +13,7 @@ Responsável por:
 
 import asyncio
 
-from app.rabbit.publisher import publish
+from app.messaging.publisher import publish
 
 from app.services.lead_service import save_lead_pipeline
 

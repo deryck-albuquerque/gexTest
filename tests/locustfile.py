@@ -5,7 +5,7 @@ from pathlib import Path
 from locust import HttpUser, task, between
 
 
-PAYLOAD_FILE = Path("tests/webhook_payloads.json")
+PAYLOAD_FILE = Path("tests/test_webhooks.json")
 
 
 class WebhookUser(HttpUser):

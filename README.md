@@ -1,16 +1,39 @@
-# gexTest
+# WebhookFlow
+
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-Framework-green)
+![RabbitMQ](https://img.shields.io/badge/RabbitMQ-Messaging-orange)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-blue)
+![Docker](https://img.shields.io/badge/Docker-Containers-blue)
 
 ## Visão Geral
 
-Teste técnico backend desenvolvido com **FastAPI**, **RabbitMQ**, **MySQL**, **Prometheus** e processamento assíncrono orientado a eventos.
+WebhookFlow é uma plataforma de processamento de webhooks orientada a eventos, desenvolvida com **FastAPI**, **RabbitMQ**, **MySQL** e **Prometheus**.
 
-O sistema recebe webhooks de gateways externos, realiza validações, normalizações, controle de idempotência, persistência para auditoria, distribuição assíncrona via RabbitMQ e monitoramento através de métricas Prometheus.
+O projeto simula uma esteira completa de integração, validação, auditoria, processamento assíncrono e distribuição de eventos, utilizando práticas comuns em sistemas de integração de médio e grande porte.
+
+A solução foi construída com foco em:
+
+- Processamento assíncrono
+- Idempotência
+- Dead Letter Queues (DLQ)
+- Observabilidade
+- Auditoria
+- Escalabilidade
 
 ---
 
-# Diagrama de Fluxo
+## Versão Atual
 
-![Diagrama de Fluxo](diagram.png)
+```text
+v1.0.0
+```
+
+---
+
+# Arquitetura
+
+![Arquitetura](assets/diagram.png)
 
 ---
 
@@ -29,6 +52,25 @@ O sistema recebe webhooks de gateways externos, realiza validações, normaliza�
 - AsyncIO
 - Structured Logging
 - Locust
+
+---
+
+# Funcionalidades
+
+- Recepção de webhooks
+- Decrypt AES-256-CBC
+- Validação de schema
+- Normalização de dados
+- Idempotência
+- Processamento assíncrono
+- RabbitMQ
+- Retry exponencial
+- Dead Letter Queues (DLQ)
+- Logs estruturados
+- Correlation ID
+- Métricas Prometheus
+- Auditorias SQL
+- Testes de carga com Locust
 
 ---
 
@@ -132,9 +174,9 @@ seguem para processamento.
 
 ```text
 app/
-├── controller/
+├── controllers/
 │   └── receiver.py
-├── rabbit/
+├── messaging/
 │   ├── connection.py
 │   └── publisher.py
 ├── services/
@@ -166,21 +208,21 @@ sql/
 tests/
 ├── locustfile.py
 ├── send_webhooks_threadpool.py
-└── webhook_payloads.json
+└── test_webhooks.json
 ```
 
 ---
 
 # Organização da Arquitetura
 
-## Controller
+## Controllers
 
 Recebe requisições HTTP e inicia o fluxo.
 
 Arquivo:
 
 ```text
-app/controller/receiver.py
+app/controllers/receiver.py
 ```
 
 ## Services
@@ -196,7 +238,7 @@ Responsável por:
 - auditoria
 - DLQ
 
-## Rabbit
+## Messaging
 
 Responsável por:
 
@@ -294,7 +336,7 @@ dist.sms
 
 ## send_webhooks_threadpool.py
 
-Dispara os 200 payloads do desafio utilizando ThreadPoolExecutor.
+Dispara múltiplos payloads utilizando ThreadPoolExecutor.
 
 Permite validar:
 
@@ -330,7 +372,7 @@ http://localhost:8089
 
 ## audit_queries.sql
 
-Consultas exigidas pelo desafio:
+Consultas:
 
 - lag médio
 - pending
@@ -418,7 +460,7 @@ Opcionalmente pode ser utilizado um endpoint externo:
 
 ### Simulação de Falhas SMS
 
-Requisito do desafio:
+Requisito:
 
 ```env
 SMS_FAILURE_RATE=0.10
@@ -483,21 +525,9 @@ Painel:
 http://localhost:15672
 ```
 
-Usuário:
-
-```text
-gex
-```
-
-Senha:
-
-```text
-gex12345
-```
-
 ## Evidência
 
-![RabbitMQ](rabbitmq.png)
+![RabbitMQ](assets/rabbitmq.png)
 
 O RabbitMQ foi utilizado como broker de mensageria para desacoplar a API dos workers assíncronos.
 
@@ -516,6 +546,8 @@ dist.dead.sms
 lead.dead.decrypt_failed
 lead.dead.schema_failed
 ```
+
+O canal SMS foi implementado como referência para demonstrar o fluxo completo de distribuição assíncrona. A arquitetura foi preparada para suportar novos canais utilizando o mesmo padrão de publicação e consumo de mensagens.
 
 Interpretação do estado apresentado:
 
@@ -562,8 +594,6 @@ e foram enviadas para DLQ.
 
 Filas modeladas conforme arquitetura.
 
-Apenas SMS foi implementado conforme solicitado no desafio.
-
 ---
 
 # Prometheus
@@ -576,7 +606,7 @@ http://localhost:9090
 
 ## Evidência
 
-![Prometheus](prometheus.png)
+![Prometheus](assets/prometheus.png)
 
 Consulta executada:
 
@@ -584,29 +614,11 @@ Consulta executada:
 sum by (gateway) (leads_received_total)
 ```
 
-Exemplo de resultado:
+A consulta demonstra a distribuição de eventos processados por gateway, permitindo acompanhar o volume de mensagens aceitas pela plataforma.
 
-```text
-grummer = 71
-lous = 54
-Total = 125
-```
+Os valores variam conforme os dados processados pela aplicação.
 
-Total:
-
-```text
-125
-```
-
-O valor representa a quantidade de leads válidos, aprovados e únicos aceitos para processamento.
-
-A soma coincide com o volume esperado descrito no arquivo:
-
-```text
-expected_summary_meta.json
-```
-
-## Métricas Implementadas
+# Métricas Implementadas
 
 ### leads_received_total
 
@@ -694,68 +706,15 @@ http://localhost:8089
 
 ## Evidência
 
-![Locust](locust.png)
+![Locust](assets/locust.png)
 
 O Locust foi utilizado para validar o comportamento da API sob carga concorrente.
 
-Resultado apresentado:
+Exemplo de execução:
 
-```text
-3682 requisições
-0 falhas HTTP
-57.9 requests/segundo
-```
-
-Distribuição:
-
-```text
-2081 requisições → /webhooks/grummer
-1601 requisições → /webhooks/lous
-```
-
-## Interpretação das métricas
-
-### Requests
-
-Quantidade total de requisições executadas.
-
-### Fails
-
-Quantidade de falhas HTTP.
-
-No teste executado:
-
-```text
-0 falhas
-```
-
-### Median
-
-Tempo mediano de resposta.
-
-### 95%ile
-
-Tempo abaixo do qual 95% das requisições foram concluídas.
-
-### 99%ile
-
-Tempo abaixo do qual 99% das requisições foram concluídas.
-
-### Average
-
-Tempo médio de resposta.
-
-### RPS
-
-Requests Per Second.
-
-Quantidade de requisições processadas por segundo.
-
-No teste apresentado:
-
-```text
-57.9 RPS
-```
+- milhares de requisições processadas
+- nenhuma falha HTTP
+- throughput estável
 
 Essas métricas permitem avaliar:
 
@@ -833,7 +792,7 @@ sms_delivered_total
 python tests/send_webhooks_threadpool.py
 ```
 
-Executa os 200 payloads fornecidos pelo desafio.
+Executa múltiplos webhooks de forma concorrente utilizando ThreadPoolExecutor, permitindo validar concorrência, throughput e comportamento da idempotência sob carga.
 
 ## Locust
 
@@ -874,109 +833,57 @@ Incluem:
 
 ---
 
-## Evidências de Auditoria SQL
+# Cenários de Validação
 
-Os outputs das queries de auditoria e seus respectivos planos de execução (`EXPLAIN`) estão disponíveis em:
+Durante os testes foram simulados diferentes cenários operacionais para validar o comportamento da plataforma:
 
-```text
-evidence_database/audit_queries/
-```
----
+- Eventos válidos
+- Eventos duplicados
+- Falhas de descriptografia
+- Falhas de validação de schema
+- Falhas de distribuição SMS
+- Processamento concorrente
 
-# Resultado Esperado dos 200 Webhooks
+Esses cenários permitiram validar:
 
-Arquivo:
-
-```text
-expected_summary_meta.json
-```
-
-Distribuição esperada:
-
-```text
-125 approved válidos únicos
-15 decrypt failures
-20 schema failures
-20 duplicados
-20 descartados
-```
-
----
-
-# Resultado Obtido
-
-Após execução dos 200 payloads fornecidos:
-
-```text
-125 leads válidos e únicos
-15 falhas de decrypt
-20 falhas de schema
-20 duplicados
-20 descartados
-```
-
-Os resultados podem ser visualizados executando:
-
-```bash
-python tests/send_webhooks_threadpool.py
-```
-
-Resultados compatíveis com o arquivo:
-
-```text
-expected_summary_meta.json
-```
-
-## Validação dos 125 Leads Únicos
-
-Embora o teste concorrente exiba um resumo da execução, a fonte oficial para validação dos registros persistidos é o banco de dados.
-
-A consulta abaixo comprova a quantidade de leads aprovados, válidos e únicos processados pela aplicação:
-
-```sql
-SELECT
-    COUNT(DISTINCT CONCAT(o.transaction_id, '|', le.event))
-        AS approved_unique
-FROM lead_events le
-JOIN orders o
-    ON o.id = le.order_id
-WHERE le.event = 'order.approved';
-```
-
-Resultado esperado:
-
-```text
-approved_unique = 125
-```
-
-Também é possível visualizar a distribuição por dia:
-
-```sql
-SELECT
-    DATE(le.persisted_at) AS day_ref,
-    COUNT(DISTINCT le.id) AS approved_unique
-FROM lead_events le
-WHERE le.event = 'order.approved'
-GROUP BY DATE(le.persisted_at);
-```
-
-## Observação
-
-O resumo exibido pelo `send_webhooks_threadpool.py` representa apenas os retornos HTTP recebidos durante a execução concorrente.
-
-A confirmação definitiva dos dados processados deve ser realizada através das consultas de auditoria no banco de dados, garantindo que os registros foram efetivamente persistidos e processados pela esteira assíncrona.
+- Idempotência
+- Retry exponencial
+- Dead Letter Queues
+- Persistência transacional
+- Observabilidade
+- Processamento assíncrono
 
 ---
 
 # Melhorias Futuras
 
-- OpenTelemetry para tracing distribuído
-- Jaeger para visualização de traces
+## Roadmap
+
+### v1.1.0
 - Dashboards Grafana
-- Implementação dos canais Email, WhatsApp e Call Center
+- Alertas operacionais
+
+### v1.2.0
+- Reprocessamento de DLQ
+- Painel administrativo
+
+### v1.3.0
+- OpenTelemetry
+- Jaeger
+
+### v2.0.0
+- Canais Email
+- WhatsApp
+- Call Center
+
+### v2.1.0
+- Circuit Breaker para provedores externos
+- Rate Limiting
 
 ---
 
-## Autor
+# Autor
 
 Desenvolvido por **Deryck Henrique Albuquerque**
+
+Backend Developer | Python | FastAPI | RabbitMQ | Docker | AWS

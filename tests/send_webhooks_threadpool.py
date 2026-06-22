@@ -8,7 +8,7 @@ import requests
 
 
 BASE_URL = "http://localhost:8000"
-PAYLOAD_FILE = Path(__file__).parent / "webhook_payloads.json"
+PAYLOAD_FILE = Path(__file__).parent / "test_webhooks.json"
 MAX_WORKERS = 20
 
 

@@ -21,8 +21,8 @@ import aiohttp
 import aio_pika
 
 from app.database import get_connection
-from app.rabbit.connection import get_channel
-from app.rabbit.publisher import publish
+from app.messaging.connection import get_channel
+from app.messaging.publisher import publish
 from app.services.dlq_service import save_dead_letter
 from app.config import SMS_WEBHOOK_URL, SMS_FAILURE_RATE, DLQ_DIST_SMS_DEAD
 from app.logging_config import logger

@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 from app.database import close_pool
-from app.controller.receiver import router
+from app.controllers.receiver import router
 from app.middleware import correlation_middleware
 from app.logging_config import logger
 

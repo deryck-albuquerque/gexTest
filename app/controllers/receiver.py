@@ -11,7 +11,7 @@ from app.services.decrypt import decrypt_grummer
 from app.services.normalizer import normalize_email, normalize_phone, normalize_name
 from app.services.idempotency import check_and_register
 from app.services.raw_payload_service import create_raw_payload, update_decrypted_payload
-from app.rabbit.publisher import publish
+from app.messaging.publisher import publish
 from app.config import QUEUE_LEAD_RECEIVED, DLQ_DECRYPT_FAILED, DLQ_SCHEMA_FAILED
 from app.logging_config import logger
 from app.middleware import correlation_id_ctx
